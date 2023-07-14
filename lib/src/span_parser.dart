@@ -7,6 +7,8 @@
 //
 // https://github.com/flutter/devtools/blob/master/packages/devtools_app/lib/src/screens/debugger/span_parser.dart
 
+// ignore_for_file: public_member_api_docs
+
 import 'dart:collection';
 import 'dart:convert';
 
