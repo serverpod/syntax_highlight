@@ -15,17 +15,37 @@ const _bracketStyles = <TextStyle>[
 
 const _failedBracketStyle = TextStyle(color: Color(0xFFff0000));
 
+const _defaultLightThemeFiles = [
+  'packages/syntax_highlight/themes/light_vs.json',
+  'packages/syntax_highlight/themes/light_plus.json',
+];
+
+const _defaultDarkThemeFiles = [
+  'packages/syntax_highlight/themes/dark_vs.json',
+  'packages/syntax_highlight/themes/dark_plus.json',
+];
+
+/// The [Highlighter] class can format a String of code and add syntax
+/// highlighting in the form of a [TextSpan]. Currrently supports Dart and
+/// YAML. Formatting style is similar to VS Code.
 class Highlighter {
   static final _cache = <String, Grammar>{};
 
+  /// Creates a [Highlighter] for the given [language] and [theme]. The
+  /// [language] must be one of the languages supported by this package,
+  /// unless it has been manually added. Before creating a [Highlighter],
+  /// you must call [initialize] with a list of languages to load.
   Highlighter({
     required this.language,
     required this.theme,
   }) {
-    grammar = _cache[language]!;
+    _grammar = _cache[language]!;
   }
 
-  static Future<void> load(List<String> languages) async {
+  /// Initializes the [Highlighter] with the given list of [languages]. This
+  /// must be called before creating any [Highlighter]s. Supported languages
+  /// are 'dart' and 'yaml'.
+  static Future<void> initialize(List<String> languages) async {
     for (var language in languages) {
       var json = await rootBundle.loadString(
         'packages/syntax_highlight/grammars/$language.json',
@@ -34,12 +54,18 @@ class Highlighter {
     }
   }
 
+  /// The language of this [Highlighter].
   final String language;
-  late final Grammar grammar;
+
+  late final Grammar _grammar;
+
+  /// The [HighlighterTheme] used to style the code.
   final HighlighterTheme theme;
 
+  /// Formats the given [code] and returns a [TextSpan] with syntax
+  /// highlighting.
   TextSpan highlight(String code) {
-    var spans = SpanParser.parse(grammar, code);
+    var spans = SpanParser.parse(_grammar, code);
     var textSpans = <TextSpan>[];
     var bracketCounter = 0;
 
@@ -59,7 +85,7 @@ class Highlighter {
 
       // Add the span.
       var segment = code.substring(span.start, span.end);
-      var style = theme.getStyle(span.scopes);
+      var style = theme._getStyle(span.scopes);
       textSpans.add(
         TextSpan(
           text: segment,
@@ -80,7 +106,7 @@ class Highlighter {
       );
     }
 
-    return TextSpan(children: textSpans);
+    return TextSpan(children: textSpans, style: theme._wrapper);
   }
 
   (TextSpan, int) _formatBrackets(String text, int bracketCounter) {
@@ -142,14 +168,65 @@ class Highlighter {
   }
 }
 
+/// A [HighlighterTheme] which is used to style the code.
 class HighlighterTheme {
-  late final TextStyle? fallback;
-  final scopes = <String, TextStyle>{};
+  final TextStyle _wrapper;
+  TextStyle? _fallback;
+  final _scopes = <String, TextStyle>{};
 
-  Future<void> load(List<String> definitions) async {
+  HighlighterTheme._({required TextStyle wrapper}) : _wrapper = wrapper;
+
+  /// Loads the default theme for the given [brightness].
+  static Future<HighlighterTheme> loadForBrightness(
+    Brightness brightness,
+  ) async {
+    if (brightness == Brightness.dark) {
+      return loadDarkTheme();
+    } else {
+      return loadLightTheme();
+    }
+  }
+
+  /// Loads the default theme for the given [BuildContext].
+  static Future<HighlighterTheme> loadForContext(
+    BuildContext context,
+  ) async {
+    return loadForBrightness(
+      Theme.of(context).brightness,
+    );
+  }
+
+  /// Loads the default dark theme.
+  static Future<HighlighterTheme> loadDarkTheme() async {
+    return loadFromAssets(
+      _defaultDarkThemeFiles,
+      const TextStyle(color: Color(0xFFB9EEFF)),
+    );
+  }
+
+  /// Loads the default light theme.
+  static Future<HighlighterTheme> loadLightTheme() async {
+    return loadFromAssets(
+      _defaultLightThemeFiles,
+      const TextStyle(color: Color(0xFF000088)),
+    );
+  }
+
+  /// Loads a custom theme from a (list of) [jsonFiles] and a [defaultStyle].
+  /// Pass in multiple [jsonFiles] to merge multiple themes.
+  static Future<HighlighterTheme> loadFromAssets(
+    List<String> jsonFiles,
+    TextStyle defaultStyle,
+  ) async {
+    var theme = HighlighterTheme._(wrapper: defaultStyle);
+    await theme._load(jsonFiles);
+    return theme;
+  }
+
+  Future<void> _load(List<String> definitions) async {
     for (var definition in definitions) {
       var json = await rootBundle.loadString(
-        'packages/syntax_highlight/themes/$definition.json',
+        definition,
       );
       _parseTheme(json);
     }
@@ -169,7 +246,7 @@ class HighlighterTheme {
           _addScope(scope, style);
         }
       } else if (scopes == null) {
-        fallback = style;
+        _fallback = style;
       }
     }
   }
@@ -213,20 +290,20 @@ class HighlighterTheme {
   }
 
   void _addScope(String scope, TextStyle style) {
-    scopes[scope] = style;
+    _scopes[scope] = style;
   }
 
-  TextStyle? getStyle(List<String> scope) {
+  TextStyle? _getStyle(List<String> scope) {
     for (var s in scope) {
       var fallbacks = _fallbacks(s);
       for (var f in fallbacks) {
-        var style = scopes[f];
+        var style = _scopes[f];
         if (style != null) {
           return style;
         }
       }
     }
-    return fallback;
+    return _fallback;
   }
 
   List<String> _fallbacks(String scope) {
