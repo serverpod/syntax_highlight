@@ -1,7 +1,7 @@
 name: syntax_highlight
-description: A new Flutter package project.
+description: A better syntax highlighter for Flutter.
 version: 0.0.1
-homepage:
+repository: https://github.com/serverpod/syntax_highlight
 
 environment:
   sdk: '>=3.0.5 <4.0.0'
