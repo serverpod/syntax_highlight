@@ -29,4 +29,5 @@ Widget build(BuildContext context) {
 ```
 
 An example of highlighted code:
-![Highlighted code]()
+![Highlighted code](https://raw.githubusercontent.com/serverpod/syntax_highlight/main/docs/screenshot.png
+)
