@@ -1,13 +1,13 @@
 # Syntax Highlight
 
-The Syntax Highlight package uses the TextMate rules for highlighting code, which is used by many popular applications such as VSCode. Currently supported languages are Dart and YAML, but it is easy to extend the language support by dropping in new grammar files in the `grammar` directory.
+The Syntax Highlight package uses the TextMate rules for highlighting code, which is used by many popular applications such as VSCode. Currently supported languages are Dart, SQL (Postgres), and YAML, but it is easy to extend the language support by dropping in new grammar files in the `grammar` directory.
 
 ## Usage
-Before you can use the `Highligher` class it needs to be initialized. The initialization will load the requested grammar files and parse them.
+Before you can use the `Highlighter` class it needs to be initialized. The initialization will load the requested grammar files and parse them.
 
 ```dart
 // Initialize the highlighter.
-await Highlighter.initialize(['dart', 'yaml']);
+await Highlighter.initialize(['dart', 'yaml', 'sql']);
 ```
 
 Next load a theme and create a highlighter.

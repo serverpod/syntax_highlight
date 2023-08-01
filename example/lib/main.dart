@@ -26,7 +26,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize the highlighter.
-  await Highlighter.initialize(['dart', 'yaml']);
+  await Highlighter.initialize(['dart', 'yaml', 'sql']);
 
   // Load the default light theme and create a highlighter.
   var lightTheme = await HighlighterTheme.loadLightTheme();
