@@ -23,7 +23,7 @@ var highlighter = Highlighter(
 Now, you can highlight your code by calling the `highlight` method. The `highlight` method will return a `TextSpan`, which you can use in a `Text` widget.
 ```dart
 Widget build(BuildContext context) {
-  var highlightedCode = highligher.highlight(myCodeString);
+  var highlightedCode = highlighter.highlight(myCodeString);
   return Text.rich(highlightedCode);
 }
 ```
