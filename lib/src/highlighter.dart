@@ -183,7 +183,7 @@ class HighlighterTheme {
 
   HighlighterTheme._({required TextStyle wrapper}) : _wrapper = wrapper;
 
-  /// Load a [HighlighterTheme] from a [json] string.
+  /// Load a [HighlighterTheme] from a JSON string.
   factory HighlighterTheme.fromConfiguration(
     String json,
     TextStyle defaultStyle,
