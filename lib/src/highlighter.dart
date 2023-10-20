@@ -55,9 +55,7 @@ class Highlighter {
   }
 
   /// Adds a custom language to the list of languages.
-  ///
-  /// Format in json string and follow the textmate bundle format.
-  ///
+  /// Associates a language [name] with a TextMate formatted [json] definition.
   /// This must be called before creating any [Highlighter]s.
   static void addLanguage(String name, String json) {
     _cache.putIfAbsent(name, () => Grammar.fromJson(jsonDecode(json)));
