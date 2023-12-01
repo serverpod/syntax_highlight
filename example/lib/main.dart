@@ -19,14 +19,24 @@ const _code = '''class MyApp extends StatelessWidget {
   }
 }''';
 
+const _serverpodYaml = '''
+class: Customer
+table: customer
+fields:
+  name: String
+  orders: List<Order>?, relation
+''';
+
 late final Highlighter _dartLightHighlighter;
 late final Highlighter _dartDarkHighlighter;
+late final Highlighter _serverpodProtocolLightYamlHighlighter;
+late final Highlighter _serverpodProtocolDarkYamlHighlighter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize the highlighter.
-  await Highlighter.initialize(['dart', 'yaml', 'sql']);
+  await Highlighter.initialize(['dart', 'yaml', 'sql', 'serverpod_protocol']);
 
   // Load the default light theme and create a highlighter.
   var lightTheme = await HighlighterTheme.loadLightTheme();
@@ -34,11 +44,19 @@ void main() async {
     language: 'dart',
     theme: lightTheme,
   );
+  _serverpodProtocolLightYamlHighlighter = Highlighter(
+    language: 'serverpod_protocol',
+    theme: lightTheme,
+  );
 
   // Load the default dark theme and create a highlighter.
   var darkTheme = await HighlighterTheme.loadDarkTheme();
   _dartDarkHighlighter = Highlighter(
     language: 'dart',
+    theme: darkTheme,
+  );
+  _serverpodProtocolDarkYamlHighlighter = Highlighter(
+    language: 'serverpod_protocol',
     theme: darkTheme,
   );
 
@@ -87,6 +105,30 @@ class MyHomePage extends StatelessWidget {
             child: Text.rich(
               // Highlight the code.
               _dartDarkHighlighter.highlight(_code),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Text.rich(
+              // Highlight the code.
+              _serverpodProtocolLightYamlHighlighter.highlight(_serverpodYaml),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.black,
+            child: Text.rich(
+              // Highlight the code.
+              _serverpodProtocolDarkYamlHighlighter.highlight(_serverpodYaml),
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 14,
                 height: 1.3,
