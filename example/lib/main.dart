@@ -45,7 +45,7 @@ void main() async {
     'yaml',
     'sql',
     'serverpod_protocol',
-    'JSON',
+    'json',
   ]);
 
   // Load the default light theme and create a highlighter.
@@ -59,7 +59,7 @@ void main() async {
     theme: lightTheme,
   );
   _jsonLightHighlighter = Highlighter(
-    language: 'JSON',
+    language: 'json',
     theme: lightTheme,
   );
 
@@ -74,7 +74,7 @@ void main() async {
     theme: darkTheme,
   );
   _jsonDarkHighlighter = Highlighter(
-    language: 'JSON',
+    language: 'json',
     theme: darkTheme,
   );
 
