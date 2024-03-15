@@ -54,6 +54,13 @@ class Highlighter {
     }
   }
 
+  /// Adds a custom language to the list of languages.
+  /// Associates a language [name] with a TextMate formatted [json] definition.
+  /// This must be called before creating any [Highlighter]s.
+  static void addLanguage(String name, String json) {
+    _cache.putIfAbsent(name, () => Grammar.fromJson(jsonDecode(json)));
+  }
+
   /// The language of this [Highlighter].
   final String language;
 
@@ -175,6 +182,16 @@ class HighlighterTheme {
   final _scopes = <String, TextStyle>{};
 
   HighlighterTheme._({required TextStyle wrapper}) : _wrapper = wrapper;
+
+  /// Load a [HighlighterTheme] from a JSON string.
+  factory HighlighterTheme.fromConfiguration(
+    String json,
+    TextStyle defaultStyle,
+  ) {
+    final theme = HighlighterTheme._(wrapper: defaultStyle);
+    theme._parseTheme(json);
+    return theme;
+  }
 
   /// Loads the default theme for the given [brightness].
   static Future<HighlighterTheme> loadForBrightness(
