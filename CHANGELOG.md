@@ -1,3 +1,8 @@
+## 0.4.0
+
+* Adds support for JSON.
+* Adds methods for programatically adding new languages.
+
 ## 0.3.0
 
 * Adds support for Serverpod model files.
