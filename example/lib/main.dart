@@ -27,16 +27,26 @@ fields:
   orders: List<Order>?, relation
 ''';
 
+const _json = '{"name":"John", "age":30, "car":null}';
+
 late final Highlighter _dartLightHighlighter;
 late final Highlighter _dartDarkHighlighter;
 late final Highlighter _serverpodProtocolLightYamlHighlighter;
 late final Highlighter _serverpodProtocolDarkYamlHighlighter;
+late final Highlighter _jsonLightHighlighter;
+late final Highlighter _jsonDarkHighlighter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize the highlighter.
-  await Highlighter.initialize(['dart', 'yaml', 'sql', 'serverpod_protocol']);
+  await Highlighter.initialize([
+    'dart',
+    'yaml',
+    'sql',
+    'serverpod_protocol',
+    'JSON',
+  ]);
 
   // Load the default light theme and create a highlighter.
   var lightTheme = await HighlighterTheme.loadLightTheme();
@@ -48,6 +58,10 @@ void main() async {
     language: 'serverpod_protocol',
     theme: lightTheme,
   );
+  _jsonLightHighlighter = Highlighter(
+    language: 'JSON',
+    theme: lightTheme,
+  );
 
   // Load the default dark theme and create a highlighter.
   var darkTheme = await HighlighterTheme.loadDarkTheme();
@@ -57,6 +71,10 @@ void main() async {
   );
   _serverpodProtocolDarkYamlHighlighter = Highlighter(
     language: 'serverpod_protocol',
+    theme: darkTheme,
+  );
+  _jsonDarkHighlighter = Highlighter(
+    language: 'JSON',
     theme: darkTheme,
   );
 
@@ -129,6 +147,30 @@ class MyHomePage extends StatelessWidget {
             child: Text.rich(
               // Highlight the code.
               _serverpodProtocolDarkYamlHighlighter.highlight(_serverpodYaml),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Text.rich(
+              // Highlight the code.
+              _jsonLightHighlighter.highlight(_json),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.black,
+            child: Text.rich(
+              // Highlight the code.
+              _jsonDarkHighlighter.highlight(_json),
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 14,
                 height: 1.3,
