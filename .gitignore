@@ -30,3 +30,8 @@ macos/
 .dart_tool/
 .packages
 build/
+example/android
+example/ios
+example/linux
+example/windows
+widget_test.dart
