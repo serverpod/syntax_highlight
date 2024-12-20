@@ -29,12 +29,22 @@ fields:
 
 const _json = '{"name":"John", "age":30, "car":null}';
 
+const _python = '''
+
+def hello():
+    print('Hello, World!')
+
+hello()
+''';
+
 late final Highlighter _dartLightHighlighter;
 late final Highlighter _dartDarkHighlighter;
 late final Highlighter _serverpodProtocolLightYamlHighlighter;
 late final Highlighter _serverpodProtocolDarkYamlHighlighter;
 late final Highlighter _jsonLightHighlighter;
 late final Highlighter _jsonDarkHighlighter;
+late final Highlighter _pythonLightHighlighter;
+late final Highlighter _pythonDarkHighlighter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +56,7 @@ void main() async {
     'sql',
     'serverpod_protocol',
     'json',
+    'python',
   ]);
 
   // Load the default light theme and create a highlighter.
@@ -76,6 +87,16 @@ void main() async {
   _jsonDarkHighlighter = Highlighter(
     language: 'json',
     theme: darkTheme,
+  );
+
+  _pythonDarkHighlighter = Highlighter(
+    language: 'python',
+    theme: darkTheme,
+  );
+
+  _pythonLightHighlighter = Highlighter(
+    language: 'python',
+    theme: lightTheme,
   );
 
   runApp(const MyApp());
@@ -171,6 +192,30 @@ class MyHomePage extends StatelessWidget {
             child: Text.rich(
               // Highlight the code.
               _jsonDarkHighlighter.highlight(_json),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Text.rich(
+              // Highlight the code.
+              _pythonLightHighlighter.highlight(_python),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.black,
+            child: Text.rich(
+              // Highlight the code.
+              _pythonDarkHighlighter.highlight(_python),
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 14,
                 height: 1.3,
