@@ -9,7 +9,11 @@
 /// The editor consists of two main parts:
 /// 1. A line number gutter that automatically updates as text changes.
 /// 2. The main text editing area with syntax highlighting.
+import 'dart:convert';
+import 'dart:math' as math;
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 
 /// Width of the line number gutter in logical pixels
@@ -67,6 +71,18 @@ class _CodeEditorState extends State<CodeEditor> {
 
   @override
   Widget build(BuildContext context) {
+    // Key combos for all platforms
+    final combos = <LogicalKeySet>{
+      LogicalKeySet(
+        LogicalKeyboardKey.meta,
+        LogicalKeyboardKey.keyC,
+      ), // macOS/web on Mac
+      LogicalKeySet(
+        LogicalKeyboardKey.control,
+        LogicalKeyboardKey.keyC,
+      ), // Windows/Linux/web on PC
+    };
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -110,15 +126,25 @@ class _CodeEditorState extends State<CodeEditor> {
               });
             }
 
-            return TextField(
-              readOnly: widget.readOnly,
-              scrollPadding: EdgeInsets.zero,
-              scrollController: _codeScrollController,
-              style: widget.textStyle,
-              controller: widget.controller,
-              maxLines: null,
-              expands: true,
-              decoration: null,
+            return Shortcuts(
+              shortcuts: {
+                for (final c in combos) c: const _CopyIntent(),
+              },
+              child: Actions(
+                actions: {
+                  _CopyIntent: _CopyAction(widget.controller, context),
+                },
+                child: TextField(
+                  readOnly: widget.readOnly,
+                  scrollPadding: EdgeInsets.zero,
+                  scrollController: _codeScrollController,
+                  style: widget.textStyle,
+                  controller: widget.controller,
+                  maxLines: null,
+                  expands: true,
+                  decoration: null,
+                ),
+              ),
             );
           }),
         ),
@@ -220,5 +246,166 @@ class _HiddenHandleScrollBehavior extends ScrollBehavior {
   Widget buildScrollbar(
       BuildContext context, Widget child, ScrollableDetails details) {
     return child;
+  }
+}
+
+class _CopyAction extends Action<_CopyIntent> {
+  _CopyAction(
+    this._textEditingController,
+    this._context,
+  );
+
+  final TextEditingController _textEditingController;
+  final BuildContext _context;
+
+  @override
+  Object? invoke(_CopyIntent intent) {
+    final html = _getSelectedTextAsHtml(_textEditingController, _context);
+
+    // TODO: Use the HTML output for clipboard or other purposes
+    // For now, just copy the plain text
+    final text = _textEditingController.selection
+        .textInside(_textEditingController.text);
+
+    if (text.isNotEmpty) {
+      final clipboard = SystemClipboard.instance;
+      if (clipboard != null) {
+        final item = DataWriterItem();
+        item.add(Formats.plainText(text));
+        if (html.isNotEmpty) {
+          final wrappedHtml =
+              "<meta charset='utf-8'><meta charset=\"utf-8\"><b style=\"font-weight:normal;\"><span style=\"font-size:12pt;font-family:'JetBrains Mono',monospace;color:#c6f7ff;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;\">$html</span></b>";
+
+          print('wrappedHtml: $wrappedHtml');
+          item.add(Formats.htmlText(wrappedHtml));
+        }
+        clipboard.write([item]);
+      } else {
+        Clipboard.setData(ClipboardData(text: text));
+      }
+    }
+    return null;
+  }
+}
+
+class _CopyIntent extends Intent {
+  const _CopyIntent();
+}
+
+/// Converts the selected text range to HTML, preserving syntax highlighting colors.
+///
+/// This function requires a BuildContext to properly build the text span with styling.
+/// Returns an empty string if no text is selected or if the selection is invalid.
+String _getSelectedTextAsHtml(
+    TextEditingController controller, BuildContext context) {
+  // Get the current selection
+  final TextSelection selection = controller.selection;
+  if (!selection.isValid || selection.isCollapsed) {
+    return '';
+  }
+
+  // Get the selected text
+  final String selectedText = selection.textInside(controller.text);
+  if (selectedText.isEmpty) {
+    return '';
+  }
+
+  // Get the full text span with styling
+  final TextSpan fullTextSpan = controller.buildTextSpan(
+    context: context,
+    withComposing: false,
+  );
+
+  final StringBuffer html = StringBuffer();
+  const htmlEscape = HtmlEscape();
+
+  _processTextSpan(fullTextSpan, 0, selection, html, htmlEscape);
+  return html.toString();
+}
+
+/// Converts a Flutter Color to CSS hex format.
+String _colorToCss(Color? color) {
+  if (color == null) return 'inherit';
+  return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+}
+
+/// Computes the total number of text characters contained in this span,
+/// including all descendants. This is used to advance the running
+/// position correctly while traversing the tree.
+int _textSpanLength(TextSpan span) {
+  var length = 0;
+  if (span.text != null) {
+    length += span.text!.length;
+  }
+  if (span.children != null) {
+    for (final child in span.children!) {
+      if (child is TextSpan) {
+        length += _textSpanLength(child);
+      }
+    }
+  }
+  return length;
+}
+
+/// Recursive function to process text spans within the selection range
+void _processTextSpan(
+  TextSpan span,
+  int currentPosition,
+  TextSelection selection,
+  StringBuffer html,
+  HtmlEscape htmlEscape,
+) {
+  if (span.children != null) {
+    for (final child in span.children!) {
+      if (child is TextSpan) {
+        final childLength = _textSpanLength(child);
+        // Recurse into the child; only leaves emit text
+        _processTextSpan(child, currentPosition, selection, html, htmlEscape);
+        currentPosition += childLength;
+      }
+    }
+  } else if (span.text != null) {
+    _processTextSpanContent(span, currentPosition, selection, html, htmlEscape);
+  }
+}
+
+/// Processes the content of a text span that contains actual text.
+void _processTextSpanContent(
+  TextSpan span,
+  int currentPosition,
+  TextSelection selection,
+  StringBuffer html,
+  HtmlEscape htmlEscape,
+) {
+  final String text = span.text!;
+  final textLength = text.length;
+
+  // Check if this text overlaps with the selection
+  if (currentPosition < selection.end &&
+      currentPosition + textLength > selection.start) {
+    // Calculate the overlap
+    final start = math.max(selection.start - currentPosition, 0);
+    final end = math.min(selection.end - currentPosition, textLength);
+
+    if (start < end) {
+      final overlappingText = text.substring(start, end);
+      _writeHtmlText(overlappingText, span.style?.color, html, htmlEscape);
+    }
+  }
+}
+
+/// Writes the text content to HTML with appropriate styling.
+void _writeHtmlText(
+  String text,
+  Color? color,
+  StringBuffer html,
+  HtmlEscape htmlEscape,
+) {
+  if (color != null) {
+    html.write('<span style="color: ${_colorToCss(color)}">');
+    html.write(htmlEscape.convert(text));
+    html.write('</span>');
+  } else {
+    html.write(htmlEscape.convert(text));
   }
 }
