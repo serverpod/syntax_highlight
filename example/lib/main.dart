@@ -84,6 +84,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final _controller = CodeEditorController(
+    lightHighlighter: _dartLightHighlighter,
+    darkHighlighter: _dartDarkHighlighter,
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,9 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 fontSize: 14,
                 height: 1.3,
               ),
-              controller: CodeEditorController(
-                  lightHighlighter: _dartLightHighlighter,
-                  darkHighlighter: _dartDarkHighlighter),
+              controller: _controller,
             ),
           ),
           const Divider(
@@ -111,6 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   widget.brightness == Brightness.light
                       ? Icons.light_mode
                       : Icons.dark_mode,
+                  size: 18,
                 ),
                 onPressed: () {
                   widget.onSetBrightness(
