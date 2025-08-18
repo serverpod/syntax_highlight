@@ -275,8 +275,6 @@ class _CopyAction extends Action<_CopyIntent> {
         if (html.isNotEmpty) {
           final wrappedHtml =
               "<meta charset='utf-8'><meta charset=\"utf-8\"><b style=\"font-weight:normal;\"><span style=\"font-size:12pt;font-family:'JetBrains Mono',monospace;color:#c6f7ff;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;\">$html</span></b>";
-
-          print('wrappedHtml: $wrappedHtml');
           item.add(Formats.htmlText(wrappedHtml));
         }
         clipboard.write([item]);
