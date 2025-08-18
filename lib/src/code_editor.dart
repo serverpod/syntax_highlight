@@ -129,10 +129,15 @@ class _CodeEditorState extends State<CodeEditor> {
             return Shortcuts(
               shortcuts: {
                 for (final c in combos) c: const _CopyIntent(),
+                LogicalKeySet(LogicalKeyboardKey.tab): const _TabIntent(),
+                LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.tab):
+                    const _ShiftTabIntent(),
               },
               child: Actions(
                 actions: {
                   _CopyIntent: _CopyAction(widget.controller, context),
+                  _TabIntent: _TabAction(widget.controller),
+                  _ShiftTabIntent: _ShiftTabAction(widget.controller),
                 },
                 child: TextField(
                   readOnly: widget.readOnly,
@@ -288,6 +293,150 @@ class _CopyAction extends Action<_CopyIntent> {
 
 class _CopyIntent extends Intent {
   const _CopyIntent();
+}
+
+class _TabAction extends Action<_TabIntent> {
+  _TabAction(
+    this._textEditingController,
+  );
+
+  final TextEditingController _textEditingController;
+
+  @override
+  Object? invoke(_TabIntent intent) {
+    final selection = _textEditingController.selection;
+    final text = _textEditingController.text;
+
+    if (selection.isCollapsed) {
+      // Single cursor - insert 2 spaces
+      final newText = text.substring(0, selection.start) +
+          '  ' +
+          text.substring(selection.end);
+      _textEditingController.text = newText;
+      _textEditingController.selection = TextSelection.collapsed(
+        offset: selection.start + 2,
+      );
+    } else {
+      // Multi-line selection - indent each line from the beginning
+      final start = selection.start;
+      final end = selection.end;
+
+      // Find the start of the first line that contains selection
+      int lineStart = start;
+      while (lineStart > 0 && text[lineStart - 1] != '\n') {
+        lineStart--;
+      }
+
+      // Find the end of the last line that contains selection
+      int lineEnd = end;
+      while (lineEnd < text.length && text[lineEnd] != '\n') {
+        lineEnd++;
+      }
+
+      // Get the text from the start of first line to end of last line
+      final fullLineText = text.substring(lineStart, lineEnd);
+      final lines = fullLineText.split('\n');
+      final indentedLines = lines.map((line) => '  $line').join('\n');
+
+      final newText = text.substring(0, lineStart) +
+          indentedLines +
+          text.substring(lineEnd);
+      _textEditingController.text = newText;
+
+      // Maintain selection but adjust for added spaces and line boundaries
+      final addedSpaces = lines.length * 2;
+      final startOffset = start - lineStart;
+      final endOffset = end - lineStart;
+
+      _textEditingController.selection = TextSelection(
+        baseOffset: lineStart + startOffset + (start == lineStart ? 2 : 0),
+        extentOffset: lineStart + endOffset + addedSpaces,
+      );
+    }
+    return null;
+  }
+}
+
+class _TabIntent extends Intent {
+  const _TabIntent();
+}
+
+class _ShiftTabAction extends Action<_ShiftTabIntent> {
+  _ShiftTabAction(
+    this._textEditingController,
+  );
+
+  final TextEditingController _textEditingController;
+
+  @override
+  Object? invoke(_ShiftTabIntent intent) {
+    final selection = _textEditingController.selection;
+    final text = _textEditingController.text;
+
+    if (selection.isCollapsed) {
+      // Single cursor - insert 2 spaces
+      final newText = text.substring(0, selection.start) +
+          '  ' +
+          text.substring(selection.end);
+      _textEditingController.text = newText;
+      _textEditingController.selection = TextSelection.collapsed(
+        offset: selection.start + 2,
+      );
+    } else {
+      // Multi-line selection - unindent each line by 2 spaces
+      final start = selection.start;
+      final end = selection.end;
+
+      // Find the start of the first line that contains selection
+      int lineStart = start;
+      while (lineStart > 0 && text[lineStart - 1] != '\n') {
+        lineStart--;
+      }
+
+      // Find the end of the last line that contains selection
+      int lineEnd = end;
+      while (lineEnd < text.length && text[lineEnd] != '\n') {
+        lineEnd++;
+      }
+
+      // Get the text from the start of first line to end of last line
+      final fullLineText = text.substring(lineStart, lineEnd);
+      final lines = fullLineText.split('\n');
+      final unindentedLines = lines.map((line) {
+        if (line.startsWith('  ')) {
+          return line.substring(2);
+        }
+        return line;
+      }).join('\n');
+
+      final newText = text.substring(0, lineStart) +
+          unindentedLines +
+          text.substring(lineEnd);
+      _textEditingController.text = newText;
+
+      // Calculate how many spaces were removed
+      int removedSpaces = 0;
+      for (final line in lines) {
+        if (line.startsWith('  ')) {
+          removedSpaces += 2;
+        }
+      }
+
+      // Maintain selection but adjust for removed spaces and line boundaries
+      final startOffset = start - lineStart;
+      final endOffset = end - lineStart;
+
+      _textEditingController.selection = TextSelection(
+        baseOffset: lineStart + startOffset,
+        extentOffset: lineStart + endOffset - removedSpaces,
+      );
+    }
+    return null;
+  }
+}
+
+class _ShiftTabIntent extends Intent {
+  const _ShiftTabIntent();
 }
 
 /// Converts the selected text range to HTML, preserving syntax highlighting colors.
