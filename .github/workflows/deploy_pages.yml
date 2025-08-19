@@ -34,12 +34,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Flutter pub get (examples/)
-        working-directory: examples
+      - name: Flutter pub get (example/)
+        working-directory: example
         run: flutter pub get
 
-      - name: Build web (examples → demo)
-        working-directory: examples
+      - name: Build web (example → demo)
+        working-directory: example
         run: |
           flutter build web --release --base-href "$BASE_PATH"
           # Clear and recreate demo directory
