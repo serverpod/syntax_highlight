@@ -1,0 +1,71 @@
+name: Deploy Flutter example to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  # Most repos are project pages, so Pages lives at /<repo>/.
+  # For user/organization sites (username.github.io), set BASE_PATH to "/".
+  BASE_PATH: "/${{ github.event.repository.name }}/"
+
+jobs:
+  build:
+    name: Build Flutter Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get (examples/)
+        working-directory: examples
+        run: flutter pub get
+
+      - name: Build web (examples → demo)
+        working-directory: examples
+        run: |
+          flutter build web --release --base-href "$BASE_PATH"
+          # Clear and recreate demo directory
+          rm -rf ../demo
+          mkdir -p ../demo
+          cp -a build/web/. ../demo/
+          # Prevent Jekyll from interfering with assets
+          touch ../demo/.nojekyll
+          # SPA fallback for client-side routing
+          cp ../demo/index.html ../demo/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
