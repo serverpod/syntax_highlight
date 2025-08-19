@@ -108,6 +108,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           Row(
             children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 8.0),
+                child: Text(
+                  'Demo of package:syntax_highlight - Maintained by Serverpod',
+                ),
+              ),
               const Spacer(),
               IconButton(
                 icon: Icon(
