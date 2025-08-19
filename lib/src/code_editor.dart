@@ -309,9 +309,8 @@ class _TabAction extends Action<_TabIntent> {
 
     if (selection.isCollapsed) {
       // Single cursor - insert 2 spaces
-      final newText = text.substring(0, selection.start) +
-          '  ' +
-          text.substring(selection.end);
+      final newText =
+          '${text.substring(0, selection.start)}  ${text.substring(selection.end)}';
       _textEditingController.text = newText;
       _textEditingController.selection = TextSelection.collapsed(
         offset: selection.start + 2,
@@ -375,9 +374,8 @@ class _ShiftTabAction extends Action<_ShiftTabIntent> {
 
     if (selection.isCollapsed) {
       // Single cursor - insert 2 spaces
-      final newText = text.substring(0, selection.start) +
-          '  ' +
-          text.substring(selection.end);
+      final newText =
+          '${text.substring(0, selection.start)}  ${text.substring(selection.end)}';
       _textEditingController.text = newText;
       _textEditingController.selection = TextSelection.collapsed(
         offset: selection.start + 2,
