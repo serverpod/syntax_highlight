@@ -35,3 +35,4 @@ example/ios
 example/linux
 example/windows
 widget_test.dart
+.flutter-plugins-dependencies
