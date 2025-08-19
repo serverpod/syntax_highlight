@@ -1,3 +1,9 @@
+## 0.5.0
+
+* Adds support for CSS, Go, HTML, Java, JavaScript, Kotlin, Python, Rust, Swift, and TypeScript.
+* Adds `CodeEditor`.
+* Adds live demo of the code editor with link from the README.
+
 ## 0.4.0
 
 * Adds support for JSON.
