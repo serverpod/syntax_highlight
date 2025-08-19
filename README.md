@@ -1,6 +1,14 @@
+![Flutter Syntax Highlight](https://raw.githubusercontent.com/serverpod/syntax_highlight/main/images/banner.jpg)
+
 # Syntax Highlight
 
-The Syntax Highlight package uses the TextMate rules for highlighting code, which is used by many popular applications such as VSCode. Currently supported languages are Dart, SQL (Postgres), and YAML, but it is easy to extend the language support by dropping in new grammar files in the `grammar` directory.
+The Syntax Highlight package uses the TextMate rules for highlighting code, which is used by many popular applications such as VSCode. Currently supported languages are Dart, SQL (Postgres), and YAML, but it is easy to extend the language support by dropping in new grammar files in the `grammars` directory.
+
+## Code editor
+
+The Syntax Highlight package also comes bundled with a `CodeEditor` widget, which provides a simplistic interface for editing code. It supports rich text copy (e.g., for pasting into Google Slides).
+
+[Live Demo](https://docs.serverpod.dev/syntax_highlight/)
 
 ## Usage
 Before you can use the `Highlighter` class it needs to be initialized. The initialization will load the requested grammar files and parse them.
@@ -29,5 +37,4 @@ Widget build(BuildContext context) {
 ```
 
 An example of highlighted code:
-![Highlighted code](https://raw.githubusercontent.com/serverpod/syntax_highlight/main/images/screenshot.png
-)
+![Highlighted code](https://raw.githubusercontent.com/serverpod/syntax_highlight/main/images/screenshot.png)
