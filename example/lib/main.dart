@@ -2,39 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 
-// Example code.
-const _code = '''class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Syntax Highlight Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
-    );
-  }
-}''';
-
-const _serverpodYaml = '''
-class: Customer
-table: customer
-fields:
-  name: String
-  orders: List<Order>?, relation
-''';
-
-const _json = '{"name":"John", "age":30, "car":null}';
-
 late final Highlighter _dartLightHighlighter;
 late final Highlighter _dartDarkHighlighter;
-late final Highlighter _serverpodProtocolLightYamlHighlighter;
-late final Highlighter _serverpodProtocolDarkYamlHighlighter;
-late final Highlighter _jsonLightHighlighter;
-late final Highlighter _jsonDarkHighlighter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,14 +23,6 @@ void main() async {
     language: 'dart',
     theme: lightTheme,
   );
-  _serverpodProtocolLightYamlHighlighter = Highlighter(
-    language: 'serverpod_protocol',
-    theme: lightTheme,
-  );
-  _jsonLightHighlighter = Highlighter(
-    language: 'json',
-    theme: lightTheme,
-  );
 
   // Load the default dark theme and create a highlighter.
   var darkTheme = await HighlighterTheme.loadDarkTheme();
@@ -69,113 +30,101 @@ void main() async {
     language: 'dart',
     theme: darkTheme,
   );
-  _serverpodProtocolDarkYamlHighlighter = Highlighter(
-    language: 'serverpod_protocol',
-    theme: darkTheme,
-  );
-  _jsonDarkHighlighter = Highlighter(
-    language: 'json',
-    theme: darkTheme,
-  );
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  var _brightness = Brightness.dark;
+
+  void _setBrightness(Brightness brightness) {
+    setState(() {
+      _brightness = brightness;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Syntax Highlight Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: _brightness,
+        ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(
+        brightness: _brightness,
+        onSetBrightness: _setBrightness,
+      ),
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+class MyHomePage extends StatefulWidget {
+  final Brightness brightness;
+  final void Function(Brightness) onSetBrightness;
+
+  const MyHomePage({
+    Key? key,
+    required this.brightness,
+    required this.onSetBrightness,
+  }) : super(key: key);
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final _controller = CodeEditorController(
+    lightHighlighter: _dartLightHighlighter,
+    darkHighlighter: _dartDarkHighlighter,
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(
+      body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Text.rich(
-              // Highlight the code.
-              _dartLightHighlighter.highlight(_code),
-              style: GoogleFonts.jetBrainsMono(
+          Expanded(
+            child: CodeEditor(
+              textStyle: GoogleFonts.jetBrainsMono(
                 fontSize: 14,
                 height: 1.3,
               ),
+              controller: _controller,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.black,
-            child: Text.rich(
-              // Highlight the code.
-              _dartDarkHighlighter.highlight(_code),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 14,
-                height: 1.3,
-              ),
-            ),
+          const Divider(
+            height: 1,
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Text.rich(
-              // Highlight the code.
-              _serverpodProtocolLightYamlHighlighter.highlight(_serverpodYaml),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 14,
-                height: 1.3,
+          Row(
+            children: [
+              const Spacer(),
+              IconButton(
+                icon: Icon(
+                  widget.brightness == Brightness.light
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                  size: 18,
+                ),
+                onPressed: () {
+                  widget.onSetBrightness(
+                    widget.brightness == Brightness.light
+                        ? Brightness.dark
+                        : Brightness.light,
+                  );
+                },
               ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.black,
-            child: Text.rich(
-              // Highlight the code.
-              _serverpodProtocolDarkYamlHighlighter.highlight(_serverpodYaml),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 14,
-                height: 1.3,
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Text.rich(
-              // Highlight the code.
-              _jsonLightHighlighter.highlight(_json),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 14,
-                height: 1.3,
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.black,
-            child: Text.rich(
-              // Highlight the code.
-              _jsonDarkHighlighter.highlight(_json),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 14,
-                height: 1.3,
-              ),
-            ),
+            ],
           ),
         ],
       ),

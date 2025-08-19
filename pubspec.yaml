@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   collection: ^1.17.1
   string_scanner: ^1.2.0
+  super_clipboard: ^0.9.1
 
 dev_dependencies:
   flutter_test:
