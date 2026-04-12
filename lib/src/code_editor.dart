@@ -11,7 +11,7 @@
 /// 2. The main text editing area with syntax highlighting.
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:super_clipboard/super_clipboard.dart';
+import 'package:clipboard/clipboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
@@ -267,24 +267,19 @@ class _CopyAction extends Action<_CopyIntent> {
   Object? invoke(_CopyIntent intent) {
     final html = _getSelectedTextAsHtml(_textEditingController, _context);
 
-    // TODO: Use the HTML output for clipboard or other purposes
-    // For now, just copy the plain text
     final text = _textEditingController.selection
         .textInside(_textEditingController.text);
 
     if (text.isNotEmpty) {
-      final clipboard = SystemClipboard.instance;
-      if (clipboard != null) {
-        final item = DataWriterItem();
-        item.add(Formats.plainText(text));
-        if (html.isNotEmpty) {
-          final wrappedHtml =
-              "<meta charset='utf-8'><meta charset=\"utf-8\"><b style=\"font-weight:normal;\"><span style=\"font-size:12pt;font-family:'JetBrains Mono',monospace;color:#c6f7ff;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;\">$html</span></b>";
-          item.add(Formats.htmlText(wrappedHtml));
-        }
-        clipboard.write([item]);
+      if (html.isNotEmpty) {
+        final wrappedHtml =
+            "<meta charset='utf-8'><meta charset=\"utf-8\"><b style=\"font-weight:normal;\"><span style=\"font-size:12pt;font-family:'JetBrains Mono',monospace;color:#c6f7ff;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;\">$html</span></b>";
+        FlutterClipboard.copyRichText(
+          text: text,
+          html: wrappedHtml,
+        );
       } else {
-        Clipboard.setData(ClipboardData(text: text));
+        FlutterClipboard.copy(text);
       }
     }
     return null;
