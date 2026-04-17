@@ -67,6 +67,18 @@
         }
       ]
     },
+    "swiftdoc": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.documentation.swift",
+          "match": "(-\\s+[A-Za-z]+:)|@[a-zA-Z]+"
+        },
+        {
+          "name": "markup.inline.raw.swift",
+          "match": "`[^`]+`"
+        }
+      ]
+    },
     "keywords": {
       "patterns": [
         {
