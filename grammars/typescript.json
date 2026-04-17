@@ -70,6 +70,18 @@
         }
       ]
     },
+    "tsdoc": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.documentation.typescript",
+          "match": "@[a-zA-Z]+"
+        },
+        {
+          "name": "markup.inline.raw.typescript",
+          "match": "`[^`]+`"
+        }
+      ]
+    },
     "keywords": {
       "patterns": [
         {
