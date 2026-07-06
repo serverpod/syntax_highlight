@@ -236,6 +236,7 @@ abstract class GrammarMatcher {
     final matchStartLocation = location;
     if (captures != null) {
       final match = scanner.substring(start, end);
+      var captureSearchOffset = 0;
       for (int i = 0; i <= lastMatch.groupCount; ++i) {
         // Skip if we don't have a scope or nested patterns for this capture.
         if (!captures.containsKey(i.toString())) continue;
@@ -243,7 +244,11 @@ abstract class GrammarMatcher {
         final captureText = lastMatch.group(i);
         if (captureText == null || captureText.isEmpty) continue;
 
-        final startOffset = match.indexOf(captureText);
+        final startOffset = i == 0
+            ? 0
+            : match.indexOf(captureText, captureSearchOffset);
+        if (startOffset < 0) continue;
+        captureSearchOffset = startOffset + captureText.length;
         final capture = captures[i.toString()] as Map<String, Object?>;
         final captureStartLocation = matchStartLocation.offset(startOffset);
         final captureEndLocation =
@@ -272,11 +277,11 @@ abstract class GrammarMatcher {
 
 /// A simple matcher which matches a single line.
 class _SimpleMatcher extends GrammarMatcher {
-  _SimpleMatcher(Map<String, Object?> json)
+  _SimpleMatcher(super.json)
       : match = RegExp(json['match'] as String, multiLine: true),
         captures = (json['captures'] as Map<String, Object?>?)
             ?.cast<String, Map<String, Object?>>(),
-        super._(json);
+        super._();
 
   static bool isType(Map<String, Object?> json) {
     return json.containsKey('match');
@@ -309,7 +314,7 @@ class _SimpleMatcher extends GrammarMatcher {
 }
 
 class _MultilineMatcher extends GrammarMatcher {
-  _MultilineMatcher(Map<String, Object?> json)
+  _MultilineMatcher(super.json)
       : begin = RegExp(json['begin'] as String, multiLine: true),
         beginCaptures = json['beginCaptures'] as Map<String, Object?>?,
         contentName = json['contentName'] as String?,
@@ -325,8 +330,9 @@ class _MultilineMatcher extends GrammarMatcher {
             ?.cast<Map<String, Object?>>()
             .map((e) => GrammarMatcher.parse(e))
             .toList()
-            .cast<GrammarMatcher>(),
-        super._(json);
+            .cast<GrammarMatcher>() ??
+            const <GrammarMatcher>[],
+        super._();
 
   static bool isType(Map<String, Object?> json) {
     return json.containsKey('begin') &&
@@ -374,7 +380,7 @@ class _MultilineMatcher extends GrammarMatcher {
   /// be null if this property is provided.
   final Map<String, Object?>? captures;
 
-  final List<GrammarMatcher>? patterns;
+  final List<GrammarMatcher> patterns;
 
   void _scanBegin(Grammar grammar, LineScanner scanner, ScopeStack scopeStack) {
     final location = scanner.location;
@@ -397,21 +403,14 @@ class _MultilineMatcher extends GrammarMatcher {
     LineScanner scanner,
     ScopeStack scopeStack,
   ) {
-    while (!scanner.isDone) {
-      if (String.fromCharCode(scanner.peekChar()!) == '\n') {
-        scanner.readChar();
-        break;
-      }
-      bool foundMatch = false;
-      for (final pattern in patterns ?? <GrammarMatcher>[]) {
-        if (pattern.scan(grammar, scanner, scopeStack)) {
-          foundMatch = true;
-          break;
-        }
-      }
-      if (!foundMatch) {
-        scanner.readChar();
-      }
+    _scanUntil(
+      grammar,
+      scanner,
+      scopeStack,
+      () => scanner.peekChar() == 0x0A,
+    );
+    if (!scanner.isDone) {
+      scanner.readChar();
     }
   }
 
@@ -420,19 +419,39 @@ class _MultilineMatcher extends GrammarMatcher {
     LineScanner scanner,
     ScopeStack scopeStack,
   ) {
-    while (!scanner.isDone && end != null && !scanner.matches(end!)) {
-      bool foundMatch = false;
-      for (final pattern in patterns ?? <GrammarMatcher>[]) {
-        if (pattern.scan(grammar, scanner, scopeStack)) {
-          foundMatch = true;
-          break;
-        }
-      }
-      if (!foundMatch) {
-        // Move forward by a character, try again.
+    if (end == null) return;
+    _scanUntil(
+      grammar,
+      scanner,
+      scopeStack,
+      () => scanner.matches(end!),
+    );
+  }
+
+  void _scanUntil(
+    Grammar grammar,
+    LineScanner scanner,
+    ScopeStack scopeStack,
+    bool Function() shouldStop,
+  ) {
+    while (!scanner.isDone && !shouldStop()) {
+      if (!_scanPatterns(grammar, scanner, scopeStack)) {
         scanner.readChar();
       }
     }
+  }
+
+  bool _scanPatterns(
+    Grammar grammar,
+    LineScanner scanner,
+    ScopeStack scopeStack,
+  ) {
+    for (final pattern in patterns) {
+      if (pattern.scan(grammar, scanner, scopeStack)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _scanEnd(Grammar grammar, LineScanner scanner, ScopeStack scopeStack) {
@@ -531,31 +550,32 @@ class _MultilineMatcher extends GrammarMatcher {
       if (end != null) 'end': end!.pattern,
       if (endCaptures != null) 'endCaptures': endCaptures,
       if (whileCond != null) 'while': whileCond!.pattern,
-      if (patterns != null)
-        'patterns': patterns!.map((e) => e.toJson()).toList(),
+      if (patterns.isNotEmpty)
+        'patterns': patterns.map((e) => e.toJson()).toList(),
     };
   }
 }
 
 class _PatternMatcher extends GrammarMatcher {
-  _PatternMatcher(Map<String, Object?> json)
+  _PatternMatcher(super.json)
       : patterns = (json['patterns'] as List<Object?>?)
             ?.cast<Map<String, Object?>>()
             .map((e) => GrammarMatcher.parse(e))
             .toList()
-            .cast<GrammarMatcher>(),
-        super._(json);
+            .cast<GrammarMatcher>() ??
+            const <GrammarMatcher>[],
+        super._();
 
   static bool isType(Map<String, Object?> json) {
     return json.containsKey('patterns');
   }
 
-  final List<GrammarMatcher>? patterns;
+  final List<GrammarMatcher> patterns;
 
   @override
   bool scan(Grammar grammar, LineScanner scanner, ScopeStack scopeStack) {
     // Try each rule in the include and return after the first successful match.
-    for (final pattern in patterns!) {
+    for (final pattern in patterns) {
       if (pattern.scan(grammar, scanner, scopeStack)) {
         return true;
       }
@@ -567,8 +587,8 @@ class _PatternMatcher extends GrammarMatcher {
   Map<String, Object?> toJson() {
     return {
       if (name != null) 'name': name,
-      if (patterns != null)
-        'patterns': patterns!.map((e) => e.toJson()).toList(),
+      if (patterns.isNotEmpty)
+        'patterns': patterns.map((e) => e.toJson()).toList(),
     };
   }
 }

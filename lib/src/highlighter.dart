@@ -39,7 +39,13 @@ class Highlighter {
     required this.language,
     required this.theme,
   }) {
-    _grammar = _cache[language]!;
+    final grammar = _cache[language];
+    if (grammar == null) {
+      throw UnsupportedError(
+        'Language "$language" has not been initialized or added.',
+      );
+    }
+    _grammar = grammar;
   }
 
   /// Initializes the [Highlighter] with the given list of [languages]. This
@@ -118,39 +124,36 @@ class Highlighter {
 
   (TextSpan, int) _formatBrackets(String text, int bracketCounter) {
     var spans = <TextSpan>[];
-    var plainText = '';
-    for (var char in text.characters) {
-      if (_isStartingBracket(char)) {
-        if (plainText.isNotEmpty) {
-          spans.add(TextSpan(text: plainText));
-          plainText = '';
-        }
+    final plainText = StringBuffer();
 
+    void flushPlainText() {
+      if (plainText.isEmpty) return;
+      spans.add(TextSpan(text: plainText.toString()));
+      plainText.clear();
+    }
+
+    for (var i = 0; i < text.length; i += 1) {
+      final charCode = text.codeUnitAt(i);
+      final char = text[i];
+      if (_isStartingBracket(charCode)) {
+        flushPlainText();
         spans.add(TextSpan(
           text: char,
           style: _getBracketStyle(bracketCounter),
         ));
         bracketCounter += 1;
-        plainText = '';
-      } else if (_isEndingBracket(char)) {
-        if (plainText.isNotEmpty) {
-          spans.add(TextSpan(text: plainText));
-          plainText = '';
-        }
-
+      } else if (_isEndingBracket(charCode)) {
+        flushPlainText();
         bracketCounter -= 1;
         spans.add(TextSpan(
           text: char,
           style: _getBracketStyle(bracketCounter),
         ));
-        plainText = '';
       } else {
-        plainText += char;
+        plainText.writeCharCode(charCode);
       }
     }
-    if (plainText.isNotEmpty) {
-      spans.add(TextSpan(text: plainText));
-    }
+    flushPlainText();
 
     if (spans.length == 1) {
       return (spans[0], bracketCounter);
@@ -166,12 +169,12 @@ class Highlighter {
     return _bracketStyles[bracketCounter % _bracketStyles.length];
   }
 
-  bool _isStartingBracket(String bracket) {
-    return bracket == '{' || bracket == '[' || bracket == '(';
+  bool _isStartingBracket(int charCode) {
+    return charCode == 0x7B || charCode == 0x5B || charCode == 0x28;
   }
 
-  bool _isEndingBracket(String bracket) {
-    return bracket == '}' || bracket == ']' || bracket == ')';
+  bool _isEndingBracket(int charCode) {
+    return charCode == 0x7D || charCode == 0x5D || charCode == 0x29;
   }
 }
 
@@ -180,6 +183,7 @@ class HighlighterTheme {
   final TextStyle _wrapper;
   TextStyle? _fallback;
   final _scopes = <String, TextStyle>{};
+  final _styleCache = <String, TextStyle?>{};
 
   HighlighterTheme._({required TextStyle wrapper}) : _wrapper = wrapper;
 
@@ -287,14 +291,18 @@ class HighlighterTheme {
 
     var fontStyleSetting = setting['fontStyle'];
     if (fontStyleSetting is String) {
-      if (fontStyleSetting == 'italic') {
-        fontStyle = FontStyle.italic;
-      } else if (fontStyleSetting == 'bold') {
-        fontWeight = FontWeight.bold;
-      } else if (fontStyleSetting == 'underline') {
-        textDecoration = TextDecoration.underline;
-      } else {
-        throw Exception('WARNING unknown style: $fontStyleSetting');
+      final styles = fontStyleSetting.trim().split(RegExp(r'\s+'));
+      for (final style in styles) {
+        if (style.isEmpty) continue;
+        if (style == 'italic') {
+          fontStyle = FontStyle.italic;
+        } else if (style == 'bold') {
+          fontWeight = FontWeight.bold;
+        } else if (style == 'underline') {
+          textDecoration = TextDecoration.underline;
+        } else {
+          throw Exception('WARNING unknown style: $fontStyleSetting');
+        }
       }
     }
 
@@ -308,28 +316,38 @@ class HighlighterTheme {
 
   void _addScope(String scope, TextStyle style) {
     _scopes[scope] = style;
+    _styleCache.clear();
   }
 
   TextStyle? _getStyle(List<String> scope) {
     for (var s in scope) {
-      var fallbacks = _fallbacks(s);
-      for (var f in fallbacks) {
-        var style = _scopes[f];
-        if (style != null) {
-          return style;
-        }
+      final style = _getStyleForScope(s);
+      if (style != null) {
+        return style;
       }
     }
     return _fallback;
   }
 
-  List<String> _fallbacks(String scope) {
-    var fallbacks = <String>[];
-    var parts = scope.split('.');
-    for (var i = 0; i < parts.length; i++) {
-      var s = parts.sublist(0, i + 1).join('.');
-      fallbacks.add(s);
+  TextStyle? _getStyleForScope(String scope) {
+    if (_styleCache.containsKey(scope)) {
+      return _styleCache[scope];
     }
-    return fallbacks.reversed.toList();
+
+    String candidate = scope;
+    while (candidate.isNotEmpty) {
+      final style = _scopes[candidate];
+      if (style != null) {
+        _styleCache[scope] = style;
+        return style;
+      }
+
+      final lastSeparator = candidate.lastIndexOf('.');
+      if (lastSeparator == -1) break;
+      candidate = candidate.substring(0, lastSeparator);
+    }
+
+    _styleCache[scope] = null;
+    return null;
   }
 }
