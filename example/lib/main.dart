@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 
+import 'code_editor.dart';
+
 late final Highlighter _dartLightHighlighter;
 late final Highlighter _dartDarkHighlighter;
 
