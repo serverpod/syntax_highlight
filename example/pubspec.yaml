@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^5.1.0
+  super_clipboard: ^0.9.1
   syntax_highlight:
     path: ../
 

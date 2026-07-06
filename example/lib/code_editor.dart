@@ -11,9 +11,10 @@
 /// 2. The main text editing area with syntax highlighting.
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:super_clipboard/super_clipboard.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 
 /// Width of the line number gutter in logical pixels
